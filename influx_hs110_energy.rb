@@ -5,8 +5,12 @@ require 'tp_link_smartplug'
 require 'time'
 
 plugs = {
-  'GBMDS-HS110-GARAGE-AC' => {
-    'address' => '172.19.0.230'
+  'HS110-1' => {
+    'address' => '192.0.2.10',
+    'tags' => {
+      'test-tag-1' => 'true',
+      'test-tag-2' => 'false'
+    }
   }
 }
 
@@ -15,7 +19,7 @@ plugs.each do |name, config|
 
   measurement_string = ''
   measurement_string.concat(name)
-  measurement_string.concat(config['tags'].to_s) unless config['tags'].nil?
+  config['tags'].each { |tag, value| measurement_string.concat(",#{tag}=#{value}") } unless config['tags'].nil? || config['tags'].empty?
   measurement_string.concat(' ')
 
   {
@@ -25,14 +29,6 @@ plugs.each do |name, config|
   }.each do |field, field_value|
     measurement_string.concat("#{field}=#{data['emeter']['get_realtime'][field_value]}i,")
   end
-
-  state = -1
-  if data['emeter']['get_realtime']['power_mw'] <= 100_000
-    state = 0
-  elsif data['emeter']['get_realtime']['power_mw'] > 100_000
-    state = 1
-  end
-  measurement_string.concat("state=#{state}i")
 
   puts(measurement_string)
 end
