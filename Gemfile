@@ -2,4 +2,4 @@
 
 source 'https://rubygems.org'
 
-gem 'tp_link_smartplug'
+gem 'tp_link_smartplug', '~>0.1.0'

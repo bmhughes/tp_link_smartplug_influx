@@ -15,38 +15,42 @@ bundle install
 ./influx_hs110_energy.rb
 ```
 
-#### Script
+```bash
+Usage: influx_hs110_energy.rb [options]
+    -h, --help                       Prints this help
+    -v, --verbose                    Enable verbose output, breaks influx line format. TESTING ONLY
+    -c, --config FILE                Configuration file location
+```
 
-Metric name: Test Plug 1
-Address: 192.0.2.10
-Tags: Test-Tag-1, Test-Tag-2
+#### Configuration
 
-```ruby
+Configuration is performed via JSON file which is `config.json` by default although this can be overridden by the `-c/--config` command line argument.
 
-plugs = {
-  'Test Plug 1' => {
-    'address' => '192.0.2.10',
-    'tags' => {
-      'test-tag-1' => 'true',
-      'test-tag-2' => 'false'
+| Metric Name | Address    | Tags                                  |
+|-------------| -----------|---------------------------------------|
+| HS110-1     | 192.0.2.10 | test-tag-1 = true, test-tag-2 = false |
+| HS110-2     | 192.0.2.11 | None                                  |
+
+```json
+{
+    "HS110-1": {
+        "address": "192.0.2.10",
+        "tags": {
+            "test-tag-1": true,
+            "test-tag-2": false
+        }
+    },
+    "HS110-2": {
+        "address": "192.0.2.11"
     }
-  },
-  'Test Plug 2' => {
-    'address' => '192.0.2.11',
-    'tags' => {
-      'test-tag-1' => 'false',
-      'test-tag-2' => 'true'
-    }
-  }
 }
-
 ```
 
 Will yield to STDOUT:
 
 ```bash
 Test Plug 1,test-tag-1=true,test-tag-2=false voltage=240657i,current=288i,power=62120i
-Test Plug 2,test-tag-1=false,test-tag-2=true voltage=240657i,current=288i,power=62120i
+Test Plug 2 voltage=240657i,current=288i,power=62120i
 ```
 
 #### Telegraf
