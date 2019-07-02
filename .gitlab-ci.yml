@@ -1,0 +1,29 @@
+---
+stages:
+  - lint
+  - test
+
+.ruby_docker_template: &ruby_docker_template
+  before_script:
+    - ruby --version
+    - bundle --version
+    - bundle install
+  image: ruby:latest
+
+rubocop:
+  stage: lint
+  <<: *ruby_docker_template
+  script:
+   - rubocop --version
+   - rubocop
+  tags:
+    - ruby
+
+test:
+  stage: test
+  <<: *ruby_docker_template
+  script:
+    - './influx_hs110_energy.rb -h'
+  tags:
+    - ruby
+...
