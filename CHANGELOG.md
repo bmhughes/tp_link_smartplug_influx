@@ -1,5 +1,11 @@
 # tp_link_smartplug_influx
 
+## v0.2.0 (2019-07-02)
+
+- Skip inaccessible hosts
+- Provide the option to specify hosts as part of the script command
+- Provide support for DNS hosts
+
 ## v0.1.0 (2019-06-26)
 
 - Move configuration to separate JSON file

@@ -1,8 +1,10 @@
-# tp_link_smartplug_influx_influx
+# tp_link_smartplug_influx
 
 Ruby script to retrieve energy data from a TP Link HS110 smart plug and out it in InfluxDB Line Protocol to be called by the telegraf *exec* input plugin.
 
-![Release](https://img.shields.io/github/release/bmhughes/tp_link_smartplug_influx.svg) ![License](https://img.shields.io/github/license/bmhughes/tp_link_smartplug_influx.svg)
+![Release](https://img.shields.io/github/release/bmhughes/tp_link_smartplug_influx.svg)
+![License](https://img.shields.io/github/license/bmhughes/tp_link_smartplug_influx.svg)
+[![Build Status](https://travis-ci.org/bmhughes/tp_link_smartplug_influx.svg?branch=master)](https://travis-ci.org/bmhughes/tp_link_smartplug_influx)
 
 ## Change Log
 
@@ -19,10 +21,13 @@ bundle install
 Usage: influx_hs110_energy.rb [options]
     -h, --help                       Prints this help
     -v, --verbose                    Enable verbose output, breaks influx line format. TESTING ONLY
-    -c, --config FILE                Configuration file location
+    -a, --address ADDRESS            IP or FDQN of plug to poll
+    -c, --config FILE                Configuration file
 ```
 
-#### Configuration
+You can either specify a single host on the command line (via option `-a`) or provide multiple hosts in a configuration file in JSON format.
+
+### Configuration File
 
 Configuration is performed via JSON file which is `config.json` by default although this can be overridden by the `-c/--config` command line argument.
 
@@ -53,7 +58,7 @@ Test Plug 1,test-tag-1=true,test-tag-2=false voltage=240657i,current=288i,power=
 Test Plug 2 voltage=240657i,current=288i,power=62120i
 ```
 
-#### Telegraf
+### Telegraf Configuration
 
 ```bash
 [[inputs.exec]]
