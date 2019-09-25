@@ -36,6 +36,10 @@ OptionParser.new do |opts|
     options[:silent_error] = false
   end
 
+  opts.on('m', '--measurement-name', 'Name for the Influx measurement') do |m|
+    options[:measurement] = m
+  end
+
   opts.on('-a ADDRESS', '--address ADDRESS', 'IP or FDQN of plug to poll') do |h|
     begin
       options[:hostname] = h
@@ -52,46 +56,84 @@ OptionParser.new do |opts|
 end.parse!
 
 if options.key?(:address) && !options.key?(:config)
-  plugs = {}
-  plugs[options[:hostname]] = {}
-  plugs[options[:hostname]]['address'] = options[:address].to_s
+  measurements = {}
+  measurements[options[:hostname]] = {}
+  measurements[options[:hostname]][options[:hostname]] = {}
+  measurements[options[:hostname]][options[:hostname]]['address'] = options[:address].to_s
 else
   options[:config] ||= __dir__.concat('/config.json')
   options[:config] = File.absolute_path(options[:config])
-  plugs = JSON.parse(File.read(options[:config])) if File.exist?(options[:config])
+  measurements = JSON.parse(File.read(options[:config])) if File.exist?(options[:config])
   raise ArgumentError, "Config file #{options[:config]} does not exist!" unless File.exist?(options[:config])
 end
 
-debug_message("There are #{plugs.count} plugs to process.") if options[:verbose]
+debug_message("There are #{measurements.count} measurements to process.") if options[:verbose]
 
-unless plugs.empty?
-  plugs.each do |name, config|
-    debug_message("Processing plug #{name}.") if options[:verbose]
-    begin
-      device = TpLinkSmartplug::Device.new(address: Resolv.getaddress(config['address']))
-      device.timeout = 1
-      data = device.energy
+unless measurements.empty?
+  measurements.each do |measurement, plugs|
+    if plugs.nil? || plugs.empty?
+      debug_message("No plugs configured for measurement name #{measurement}!")
+      next
+    end
 
-      measurement_string = ''
-      measurement_string.concat(name)
-      config['tags'].each { |tag, value| measurement_string.concat(",#{tag}=#{value}") } unless config['tags'].nil? || config['tags'].empty?
-      measurement_string.concat(' ')
+    debug_message("There are #{plugs.count} plugs to process for measurement #{measurement}.") if options[:verbose]
 
-      {
-        'voltage': 'voltage_mv',
-        'current': 'current_ma',
-        'power': 'power_mw',
-      }.each do |field, field_value|
-        debug_message("Processing field #{field}.") if options[:verbose]
-        measurement_string.concat("#{field}=#{data['emeter']['get_realtime'][field_value]}i,")
-      end
+    plugs.each do |plug, config|
+      debug_message("Processing plug #{plug}.") if options[:verbose]
+      begin
+        device = TpLinkSmartplug::Device.new(address: Resolv.getaddress(config['address']))
+        device.timeout = 1
 
-      measurement_string = measurement_string[0...-1]
-      puts(measurement_string)
-    rescue RuntimeError
-      unless options[:silent_error]
-        puts "Error occured polling plug #{name}"
-        exit 1
+        # Poll plug for data
+        info_data = device.info
+        energy_data = device.energy
+
+        measurement_string = ''
+        measurement_string.concat(measurement)
+
+        # Add plug name tag
+        measurement_string.concat(",plug=#{plug.gsub(/( |,|=)/, '\\\\\1')}")
+        # Default tags from info_data
+        {
+          'dev_alias': 'alias',
+        }.each do |tag, tag_value|
+          debug_message("Processing field #{tag}.") if options[:verbose]
+          escaped_tag_value = info_data['system']['get_sysinfo'][tag_value].gsub(/( |,|=)/, '\\\\\1')
+          measurement_string.concat(",#{tag}=#{escaped_tag_value}")
+        end
+
+        # Custom tags
+        config['tags'].each { |tag, value| measurement_string.concat("#{tag}=#{value},") } unless config['tags'].nil? || config['tags'].empty?
+
+        measurement_string.concat(' ')
+
+        # Energy meter fields
+        {
+          'voltage': 'voltage_mv',
+          'current': 'current_ma',
+          'power': 'power_mw',
+        }.each do |field, field_value|
+          debug_message("Processing field #{field}.") if options[:verbose]
+          measurement_string.concat("#{field}=#{energy_data['emeter']['get_realtime'][field_value]}i,")
+        end
+
+        # System info fields
+        {
+          'relay_state': 'relay_state',
+          'on_time': 'on_time',
+          'rssi': 'rssi',
+        }.each do |field, field_value|
+          debug_message("Processing field #{field}.") if options[:verbose]
+          measurement_string.concat("#{field}=#{info_data['system']['get_sysinfo'][field_value]}i,")
+        end
+
+        measurement_string = measurement_string[0...-1]
+        puts(measurement_string)
+      rescue RuntimeError
+        unless options[:silent_error]
+          puts "Error occured polling plug #{name}"
+          exit 1
+        end
       end
     end
   end
