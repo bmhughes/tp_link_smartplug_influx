@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: false
 
-## Version 0.2.0
+## Version 0.3.0
 
 require 'tp_link_smartplug'
 require 'time'
@@ -17,7 +17,7 @@ end
 
 options = {
   verbose: false,
-  silent_error: true
+  silent_error: true,
 }
 
 OptionParser.new do |opts|
@@ -80,7 +80,7 @@ unless plugs.empty?
       {
         'voltage': 'voltage_mv',
         'current': 'current_ma',
-        'power': 'power_mw'
+        'power': 'power_mw',
       }.each do |field, field_value|
         debug_message("Processing field #{field}.") if options[:verbose]
         measurement_string.concat("#{field}=#{data['emeter']['get_realtime'][field_value]}i,")
