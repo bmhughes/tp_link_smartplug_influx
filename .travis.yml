@@ -4,8 +4,9 @@ os:
   - linux
 
 rvm:
-  - 2.5.5
-  - 2.6.4
+  - 2.5
+  - 2.6
+  - 2.7
 
 install:
   - bundle install
