@@ -1,5 +1,12 @@
 # tp_link_smartplug_influx
 
+## v0.3.0 (2019-09-26)
+
+- Add default tags with plug name
+- Add RSSI and power on time to default fields
+- Add support for multiple plugs per measurement
+- Added conditional fields
+
 ## v0.2.0 (2019-07-02)
 
 - Skip inaccessible hosts
