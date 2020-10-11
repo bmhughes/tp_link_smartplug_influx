@@ -88,8 +88,8 @@ module TpLinkSmartplugInflux
     private
 
     def poll_plug
-      @sysinfo = @device.info['system']['get_sysinfo']
-      @energy =  @device.energy['emeter']['get_realtime']
+      @sysinfo = @device.info['system']['get_sysinfo'].sort.to_h
+      @energy =  @device.energy['emeter']['get_realtime'].sort.to_h
     rescue RuntimeError
       raise "Error occured polling plug #{@name}" unless @silent_error
     end
