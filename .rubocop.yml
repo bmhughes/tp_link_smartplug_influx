@@ -1,1 +1,17 @@
-inherit_from: .rubocop_todo.yml
+inherit_from:
+  - .rubocop_todo.yml
+  - https://relaxed.ruby.style/rubocop.yml
+
+AllCops:
+  NewCops: enable
+
+Style/FrozenStringLiteralComment:
+  EnforcedStyle: never
+
+Style/TrailingCommaInHashLiteral:
+  EnforcedStyleForMultiline: no_comma
+
+Style/PercentLiteralDelimiters:
+  PreferredDelimiters:
+    default: '()'
+    '%i': '()'
