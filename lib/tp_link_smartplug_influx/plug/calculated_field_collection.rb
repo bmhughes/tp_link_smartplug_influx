@@ -44,7 +44,7 @@ module TpLinkSmartplugInflux
       end
     end
 
-    class CalculatedFieldCollectionError < StandardError; end
+    class CalculatedFieldCollectionError < TpLinkSmartplugInflux::BaseError; end
     class CalculatedFieldCollectionAddError < CalculatedFieldCollectionError; end
   end
 end

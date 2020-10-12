@@ -60,6 +60,6 @@ module TpLinkSmartplugInflux
       end
     end
 
-    class CalculatedFieldError < StandardError; end
+    class CalculatedFieldError < TpLinkSmartplugInflux::BaseError; end
   end
 end

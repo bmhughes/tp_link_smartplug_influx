@@ -5,12 +5,10 @@ module TpLinkSmartplugInflux
   class Plug < TpLinkSmartplugInflux::Base
     attr_accessor :name
     attr_accessor :timeout
-    attr_accessor :verbose
-    attr_accessor :debug
-    attr_accessor :silent_error
-
     attr_accessor :calculated_fields
+    attr_accessor :verbose
 
+    attr_reader :debug
     attr_reader :address
 
     DATA_FIELDS = %i(info energy).freeze
@@ -21,18 +19,29 @@ module TpLinkSmartplugInflux
       @device = TpLinkSmartplug::Device.new(address: Resolv.getaddress(address))
       @device.timeout = timeout
 
+      @device_last_polled = nil
+
       @verbose = false
       @debug = false
-      @silent_error = true
 
       @calculated_fields = TpLinkSmartplugInflux::Plug::CalculatedFieldCollection.new
+
+      debug_message("Initialised new plug #{@name} with timeout #{device.timeout}.") if @debug
+    end
+
+    def debug=(dbg)
+      @debug = dbg
+      @device.debug = dbg
+      @verbose = dbg if dbg
     end
 
     def data
-      poll_plug
-
       data = {}
       DATA_FIELDS.each { |field| data.merge!(public_send(field)) }
+
+      debug_message("Returned #{data.count} data items for plug #{@name}.") if @verbose
+      debug_message("Plug #{@name} returned data: #{data}") if @debug
+
       data
     end
 
@@ -40,6 +49,9 @@ module TpLinkSmartplugInflux
       poll_plug
 
       plug_info = @sysinfo.dup
+
+      raise PlugDataError, "Plug information empty for plug #{@name}." if plug_info.empty?
+
       plug_info.delete_if { |k, _| !TpLinkSmartplugInflux::Data::INFO_FIELDS.key?(k) }
       plug_info.transform_keys(&TpLinkSmartplugInflux::Data::INFO_FIELDS.method(:[]))
     end
@@ -48,6 +60,9 @@ module TpLinkSmartplugInflux
       poll_plug
 
       plug_energy = @energy.dup
+
+      raise PlugDataError, "Energy data empty for plug #{@name}." if plug_energy.empty?
+
       plug_energy.delete_if { |k, _| !TpLinkSmartplugInflux::Data::ENERGY_FIELDS.key?(k) }
       plug_energy.transform_keys(&TpLinkSmartplugInflux::Data::ENERGY_FIELDS.method(:[]))
     end
@@ -55,8 +70,9 @@ module TpLinkSmartplugInflux
     def tags
       poll_plug unless @sysinfo
 
-      tags = []
+      raise PlugDataError, "System information empty for plug #{@name}." if @sysinfo.empty?
 
+      tags = []
       tags.push("plug=#{@name.gsub(/( |,|=)/, '\\\\\1')}")
 
       TpLinkSmartplugInflux::Data::DEFAULT_TAGS.each do |tag_value, tag|
@@ -88,12 +104,23 @@ module TpLinkSmartplugInflux
     private
 
     def poll_plug
-      @sysinfo = @device.info['system']['get_sysinfo'].sort.to_h
-      @energy =  @device.energy['emeter']['get_realtime'].sort.to_h
-    rescue RuntimeError
-      raise "Error occured polling plug #{@name}" unless @silent_error
+      if @device_last_polled.nil? || (seconds_since(@device_last_polled) > 3)
+        debug_message("Polling plug #{@name}.") if @verbose
+
+        @sysinfo = @device.info['system']['get_sysinfo'].sort.to_h
+        @energy =  @device.energy['emeter']['get_realtime'].sort.to_h
+
+        @device_last_polled = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      elsif @debug
+        debug_message("NOT polling plug #{@name} as time since last polled is < 3 seconds. Time since last polled: #{seconds_since(@device_last_polled)}s.")
+      end
+    rescue RuntimeError => e
+      raise PlugPollError, "Error occured polling plug #{@name}, inner error: \n #{e}"
     end
   end
+
+  class PlugDataError < TpLinkSmartplugInflux::BaseError; end
+  class PlugPollError < TpLinkSmartplugInflux::BaseError; end
 end
 
 require_relative 'plug/calculated_field'

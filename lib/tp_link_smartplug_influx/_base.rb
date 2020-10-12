@@ -4,4 +4,6 @@ module TpLinkSmartplugInflux
   class Base
     include TpLinkSmartplugInflux::Helpers
   end
+
+  class BaseError < StandardError; end
 end
