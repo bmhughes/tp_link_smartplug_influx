@@ -1,10 +1,10 @@
 {
-    "Measurement-01": {
-        "Plug-01": {
-            "address": "192.0.2.10"
-        },
-        "Plug-02": {
-            "address": "192.0.2.11"
-        }
-    }    
+  "Measurement-01": {
+    "Plug-01": {
+      "address": "192.0.2.10"
+    },
+    "Plug-02": {
+      "address": "192.0.2.11"
+    }
+  }
 }

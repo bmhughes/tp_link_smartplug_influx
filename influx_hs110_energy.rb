@@ -12,8 +12,6 @@ require 'benchmark'
 
 require_relative 'lib/tp_link_smartplug_influx'
 
-include TpLinkSmartplugInflux::Helpers
-
 options = {
   verbose: false,
   silent_error: true
@@ -85,42 +83,50 @@ unless nil_or_empty?(measurements)
 
     debug_message("There are #{plugs.count} plugs to process for measurement #{measurement}.") if options[:verbose]
 
+    threads = []
+
     plugs.each do |plug, config|
       puts if options[:verbose]
       debug_message("Processing plug #{plug}.") if options[:verbose]
-      begin
-        time_start = Process.clock_gettime(Process::CLOCK_MONOTONIC) if options[:debug]
-        plug = TpLinkSmartplugInflux::Plug.new(name: plug, address: config['address'])
+      threads << Thread.new do
+        debug_message("Creating processing thread for plug #{plug}.") if options[:verbose]
+        begin
+          time_start = Process.clock_gettime(Process::CLOCK_MONOTONIC) if options[:debug]
+          plug = TpLinkSmartplugInflux::Plug.new(name: plug, address: config['address'])
+          %i(debug= verbose=).each { |opt| plug.send(opt, config[opt]) }
 
-        unless nil_or_empty?(config['calculated_fields'])
-          config['calculated_fields'].each do |field, field_config|
-            debug_message("Adding calculated field '#{field}' for data field '#{field_config['field']}' with #{field_config['conditions'].count} conditions.") if options[:debug]
+          unless nil_or_empty?(config['calculated_fields'])
+            config['calculated_fields'].each do |field, field_config|
+              debug_message("Adding calculated field '#{field}' for data field '#{field_config['field']}' with #{field_config['conditions'].count} conditions.") if options[:debug]
 
-            plug.calculated_fields.add(
-              TpLinkSmartplugInflux::Plug::CalculatedField.new(
-                name: field,
-                default: field_config['default'],
-                field: field_config['field'],
-                conditions: field_config['conditions']
+              plug.calculated_fields.add(
+                TpLinkSmartplugInflux::Plug::CalculatedField.new(
+                  name: field,
+                  default: field_config['default'],
+                  field: field_config['field'],
+                  conditions: field_config['conditions']
+                )
               )
-            )
+            end
           end
-        end
 
-        measurement_string = ''
-        measurement_string.concat("#{measurement},")
-        measurement_string.concat(plug.influx_line)
+          measurement_string = ''
+          measurement_string.concat("#{measurement},")
+          measurement_string.concat(plug.influx_line)
 
-        measurement_strings.push(measurement_string)
+          measurement_strings.push(measurement_string)
 
-        debug_message("Took #{seconds_since(time_start)} seconds to poll plug #{plug.name}") if options[:debug]
-      rescue StandardError => e
-        unless options[:silent_error]
-          puts "Error occured polling plug #{name}, exception: #{e}."
-          exit 1
+          debug_message("Took #{seconds_since(time_start)} seconds to poll plug #{plug.name}") if options[:debug]
+        rescue TpLinkSmartplugInflux::BaseError => e
+          unless options[:silent_error]
+            puts "Error occured processing plug #{plug.name}:\n #{e}"
+            exit 1
+          end
         end
       end
     end
+
+    threads.each(&:join)
   end
 end
 
