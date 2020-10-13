@@ -37,7 +37,7 @@ module TpLinkSmartplugInflux
     # @param address [String] FQDN/IP address of plug.
     # @param timeout [Integer] Plug polling timeout.
     # @return [nil]
-    def initialize(name:, address:, timeout: 1)
+    def initialize(name:, address:, timeout: 3)
       @name = name
 
       @device = TpLinkSmartplug::Device.new(address: Resolv.getaddress(address))
