@@ -1,3 +1,5 @@
+require 'time'
+
 # Test an attribute for nil or empty-ness
 # @param value The value to test.
 # @return [TrueClass, FalseClass] The test result.

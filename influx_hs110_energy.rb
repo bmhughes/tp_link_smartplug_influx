@@ -3,12 +3,10 @@
 ## Version 1.0.0
 
 require 'tp_link_smartplug'
-require 'time'
 require 'json'
 require 'optparse'
 require 'ipaddr'
 require 'resolv'
-require 'benchmark'
 
 require_relative 'lib/tp_link_smartplug_influx'
 
