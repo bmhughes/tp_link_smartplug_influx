@@ -113,12 +113,10 @@ module TpLinkSmartplugInflux
     # @return [String]
     def influx_line
       iflf_string = ''
-
-      iflf_string.concat(tags)
-      iflf_string.concat(' ')
+      iflf_string.concat("#{tags} ")
 
       values = []
-      DATA_FIELDS.each { |type| values.push(public_send(type).map { |k, v| "#{k}=#{iflf_formatted_value(v)}" }.join(',')) }
+      DATA_FIELDS.each { |type| values.concat(public_send(type).map { |k, v| "#{k}=#{iflf_formatted_value(v)}" }) }
 
       unless calculated_fields.empty?
         values.push(calculated_fields.evaluate_all(energy))
