@@ -104,6 +104,7 @@ unless nil_or_empty?(measurements)
                   name: field,
                   default: field_config['default'],
                   field: field_config['field'],
+                  type: field_config['type'],
                   conditions: field_config['conditions']
                 )
               )
