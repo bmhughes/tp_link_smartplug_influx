@@ -1,6 +1,7 @@
 # tp_link_smartplug_influx
 
-Ruby script to retrieve energy data from a TP Link HS110 smart plug and out it in InfluxDB Line Protocol to be called by the telegraf *exec* input plugin.
+Ruby script to retrieve energy and system data from a TP Link HS110 smart plug and output it in InfluxDB Line Protocol.
+Intended to be called by the telegraf *exec* input plugin.
 
 ![Release](https://img.shields.io/github/release/bmhughes/tp_link_smartplug_influx.svg)
 ![License](https://img.shields.io/github/license/bmhughes/tp_link_smartplug_influx.svg)

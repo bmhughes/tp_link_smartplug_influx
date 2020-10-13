@@ -1,5 +1,9 @@
 module TpLinkSmartplugInflux
   class Plug
+    # Class for generation of user-defined calculated data field.
+    # @attr name [String]
+    # @attr default [String, Integer]
+    # @attr field [String]
     class CalculatedField < TpLinkSmartplugInflux::Base
       attr_reader :name
       attr_reader :default
@@ -9,6 +13,11 @@ module TpLinkSmartplugInflux
 
       CALCULATED_FIELD_ALLOWED_OPERATORS ||= %i(= > < >= <=).freeze
 
+      # Create a new instance of a calculated field.
+      # @param name [String] Calculated field name.
+      # @param default [Integer, String] Default value to use when an ambigious result is found.
+      # @param field [String] Data field name to evalulate against.
+      # @param conditions [Hash] Condition configuration Hash.
       def initialize(name:, default:, field:, conditions: {})
         raise CalculatedFieldError if nil_or_empty?(name)
 
@@ -21,6 +30,9 @@ module TpLinkSmartplugInflux
         @conditions = conditions
       end
 
+      # Evaulate the field conditions against the provided data hash.
+      # @param data [Hash] Data hash to evaluate against.
+      # @return [Hash] Result hash.
       def evaluate(data)
         raise CalculatedFieldError, "Calculated field #{@name} has no conditions." if @conditions.empty?
 
@@ -45,10 +57,14 @@ module TpLinkSmartplugInflux
         end
       end
 
+      # Return number of conditions configured for field
+      # @return [Integer] Condition count.
       def condition_count
         @conditions.count
       end
 
+      # Return calculated field in configuration hash format
+      # @return [Hash] Calculated field as per configuration hash.
       def to_h
         {
           @name => {
@@ -58,8 +74,9 @@ module TpLinkSmartplugInflux
           }
         }
       end
-    end
 
-    class CalculatedFieldError < TpLinkSmartplugInflux::BaseError; end
+      # Error class representing an error when evaluating the calculated field.
+      class CalculatedFieldError < TpLinkSmartplugInflux::BaseError; end
+    end
   end
 end

@@ -2,17 +2,41 @@ require 'resolv'
 require 'tp_link_smartplug'
 
 module TpLinkSmartplugInflux
+  # Plug class for use with Influx line-format.
+  # @attr name [String]
+  # @attr timeout [Integer]
+  # @attr calculated_fields [TpLinkSmartplugInflux::Plug::CalculatedFieldCollection]
+  # @attr verbose [TrueClass, FalseClass]
+  # @attr debug [TrueClass, FalseClass]
+  # @attr address [String]
   class Plug < TpLinkSmartplugInflux::Base
     attr_accessor :name
     attr_accessor :timeout
     attr_accessor :calculated_fields
     attr_accessor :verbose
 
+    # @overload debug
+    #   @return [TrueClass, FalseClass] Return the present debug state.
+    # @overload debug=(value)
+    #   @param value [TrueClass, FalseClass] Set the debug state.
     attr_reader :debug
+
+    def debug=(dbg)
+      @debug = dbg
+      @device.debug = dbg
+      @verbose = dbg if dbg
+    end
+
     attr_reader :address
 
+    # Plug default data fields
     DATA_FIELDS = %i(info energy).freeze
 
+    # Create a new instance of the plug class.
+    # @param name [String] Name of the plug, will be used for the influx metric name tag.
+    # @param address [String] FQDN/IP address of plug.
+    # @param timeout [Integer] Plug polling timeout.
+    # @return [nil]
     def initialize(name:, address:, timeout: 1)
       @name = name
 
@@ -29,12 +53,8 @@ module TpLinkSmartplugInflux
       debug_message("Initialised new plug #{@name} with timeout #{device.timeout}.") if @debug
     end
 
-    def debug=(dbg)
-      @debug = dbg
-      @device.debug = dbg
-      @verbose = dbg if dbg
-    end
-
+    # get all data for the plug.
+    # @return [Hash]
     def data
       data = {}
       DATA_FIELDS.each { |field| data.merge!(public_send(field)) }
@@ -45,6 +65,8 @@ module TpLinkSmartplugInflux
       data
     end
 
+    # Get the system data for the plug.
+    # @return [String]
     def info
       poll_plug
 
@@ -56,6 +78,8 @@ module TpLinkSmartplugInflux
       plug_info.transform_keys(&TpLinkSmartplugInflux::Data::INFO_FIELDS.method(:[]))
     end
 
+    # Get the energy data for the plug.
+    # @return [String]
     def energy
       poll_plug
 
@@ -67,6 +91,8 @@ module TpLinkSmartplugInflux
       plug_energy.transform_keys(&TpLinkSmartplugInflux::Data::ENERGY_FIELDS.method(:[]))
     end
 
+    # Get the tags for the plug.
+    # @return [String]
     def tags
       poll_plug unless @sysinfo
 
@@ -83,6 +109,8 @@ module TpLinkSmartplugInflux
       tags.join(',')
     end
 
+    # Output a string in influx line format for the plug.
+    # @return [String]
     def influx_line
       iflf_string = ''
 
@@ -103,6 +131,8 @@ module TpLinkSmartplugInflux
 
     private
 
+    # Poll the plug for fresh data.
+    # @return [TrueClass, FalseClass] Returns true if the plug was polled and false if cached result was used.
     def poll_plug
       if @device_last_polled.nil? || (seconds_since(@device_last_polled) > 3)
         debug_message("Polling plug #{@name}.") if @verbose
@@ -111,16 +141,23 @@ module TpLinkSmartplugInflux
         @energy =  @device.energy['emeter']['get_realtime'].sort.to_h
 
         @device_last_polled = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+        true
       elsif @debug
         debug_message("NOT polling plug #{@name} as time since last polled is < 3 seconds. Time since last polled: #{seconds_since(@device_last_polled)}s.")
+
+        false
       end
     rescue RuntimeError => e
       raise PlugPollError, "Error occured polling plug #{@name}, inner error: \n #{e}"
     end
-  end
 
-  class PlugDataError < TpLinkSmartplugInflux::BaseError; end
-  class PlugPollError < TpLinkSmartplugInflux::BaseError; end
+    # Error class representing an error with the data returned from the plug.
+    class PlugDataError < TpLinkSmartplugInflux::BaseError; end
+
+    # Error class representing an error when polling the plug for data.
+    class PlugPollError < TpLinkSmartplugInflux::BaseError; end
+  end
 end
 
 require_relative 'plug/calculated_field'
