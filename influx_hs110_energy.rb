@@ -84,6 +84,11 @@ unless nil_or_empty?(measurements)
     threads = []
 
     plugs.each do |plug, config|
+      unless config.fetch('enabled', true)
+        debug_message("Processing disabled for plug #{plug}.") if options[:verbose]
+        next
+      end
+
       puts if options[:verbose]
       debug_message("Processing plug #{plug}.") if options[:verbose]
       threads << Thread.new do

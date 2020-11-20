@@ -90,33 +90,34 @@ Configuration is performed via JSON file which is `config.json` by default altho
 
 ```json
 {
-    "Measurement": {
-        "Plug": {
-            "address": "IP address/FQDN of plug",
-            "calculated_fields": {
-                "field_name": {
-                    "default": "Default value",
-                    "field": "Field to examine",
-                    "conditions": {
-                        "value": {
-                            "operator": "Comparison value"
-                        }
-                    }
-                }
-            },
-            "fields": {
-                "energy": {
-                    "Influx field name": "Field from plug energy data"
-                },
-                "info": {
-                    "Influx field name": "Field from plug info data"
-                }
-            },
-            "tags": {
-                "Tag name": "Tag value"
+  "Measurement": {
+    "Plug": {
+      "enabled": "Optional true/false to control whether the plug is polled. The default value is true if not present.",
+      "address": "IP address/FQDN of plug",
+      "calculated_fields": {
+        "field_name": {
+          "default": "Default value",
+          "field": "Field to examine",
+          "conditions": {
+            "value": {
+              "operator": "Comparison value"
             }
+          }
         }
+      },
+      "fields": {
+        "energy": {
+          "Influx field name": "Field from plug energy data"
+        },
+        "info": {
+          "Influx field name": "Field from plug info data"
+        }
+      },
+      "tags": {
+        "Tag name": "Tag value"
+      }
     }
+  }
 }
 ```
 
