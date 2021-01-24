@@ -146,7 +146,7 @@ module TpLinkSmartplugInflux
 
         false
       end
-    rescue RuntimeError => e
+    rescue TpLinkSmartplug::BaseError => e
       raise PlugPollError, "Error occured polling plug #{@name}, inner error: \n #{e}"
     end
 
