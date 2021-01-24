@@ -55,3 +55,6 @@ build-iPhoneSimulator/
 
 # Custom
 config.json
+
+# Rubocop included configurations
+.rubocop-*yml

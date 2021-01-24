@@ -1,16 +1,16 @@
 #!/usr/bin/env ruby
-# frozen_string_literal: false
 
-## Version 0.3.0
+## Version 1.0.0
+
+require 'bundler/setup'
 
 require 'tp_link_smartplug'
-require 'time'
 require 'json'
 require 'optparse'
 require 'ipaddr'
 require 'resolv'
-require 'benchmark'
-require_relative 'helpers/helpers.rb'
+
+require_relative 'lib/tp_link_smartplug_influx'
 
 options = {
   verbose: false,
@@ -71,23 +71,6 @@ else
   raise ArgumentError, "Config file #{options[:config]} does not exist!" unless File.exist?(options[:config])
 end
 
-# Default tags and measurements
-tags = {
-  'dev_alias': 'alias'
-}
-
-energy_fields = {
-  'voltage': 'voltage_mv',
-  'current': 'current_ma',
-  'power': 'power_mw'
-}
-
-info_fields = {
-  'relay_state': 'relay_state',
-  'on_time': 'on_time',
-  'rssi': 'rssi'
-}
-
 debug_message("There are #{measurements.count} measurements to process.") if options[:verbose]
 
 unless nil_or_empty?(measurements)
@@ -100,121 +83,65 @@ unless nil_or_empty?(measurements)
 
     debug_message("There are #{plugs.count} plugs to process for measurement #{measurement}.") if options[:verbose]
 
-    plugs.each do |plug, config|
-      data = {}
+    threads = []
 
-      calculated_fields = {}
+    plugs.each do |plug, config|
+      unless config.fetch('enabled', true)
+        debug_message("Processing disabled for plug #{plug}.") if options[:verbose]
+        next
+      end
+
       puts if options[:verbose]
       debug_message("Processing plug #{plug}.") if options[:verbose]
-      begin
-        time_start = Process.clock_gettime(Process::CLOCK_MONOTONIC) if options[:debug]
-        device = TpLinkSmartplug::Device.new(address: Resolv.getaddress(config['address']))
-        device.timeout = 1
-
-        # Poll plug for data
-        info_data = device.info['system']['get_sysinfo']
-        energy_data = device.energy['emeter']['get_realtime']
-        debug_message("Took #{seconds_since(time_start)} seconds to poll plug #{plug}") if options[:debug]
-
-        measurement_string = ''
-        measurement_string.concat(measurement)
-
-        ## Tags
-        # Add plug name tag
-        measurement_string.concat(",plug=#{plug.gsub(/( |,|=)/, '\\\\\1')}")
-
-        # Tags from info_data
-        tags.merge!(config['tags']) if config['tags']
-        tags.each do |tag, tag_value|
-          debug_message("Processing tag #{tag}.") if options[:verbose]
-          escaped_tag_value = info_data[tag_value].gsub(/( |,|=)/, '\\\\\1')
-          measurement_string.concat(",#{tag}=#{escaped_tag_value}")
-        end
-
-        # Custom tags
-        config['tags'].each { |tag, value| measurement_string.concat("#{tag}=#{value},") } unless config['tags'].nil? || config['tags'].empty?
-
-        measurement_string.concat(' ')
-
-        ## Fields
-        # Energy meter fields
-        energy_fields.merge!(config['fields']['energy']) if config['fields'] && config['fields']['energy']
-        energy_fields.each do |field, field_value|
-          debug_message("Processing field #{field}.") if options[:verbose]
-          data[field] = energy_data[field_value].to_i
-        end
-
-        # System info fields
-        info_fields.merge!(config['fields']['info']) if config['fields'] && config['fields']['info']
-        info_fields.each do |field, field_value|
-          debug_message("Processing field #{field}.") if options[:verbose]
-          data[field] = info_data[field_value].to_i
-        end
-
-        # Calculated fields
-        if nil_or_empty?(config['calculated_fields'])
-          debug_message("There are no calculated fields to process for plug #{plug}.") if options[:verbose]
-        else
+      threads << Thread.new do
+        debug_message("Creating processing thread for plug #{plug}.") if options[:verbose]
+        begin
           time_start = Process.clock_gettime(Process::CLOCK_MONOTONIC) if options[:debug]
-          debug_message("There are #{config['calculated_fields'].count} calculated fields to process for plug #{plug}.") if options[:verbose]
-          config['calculated_fields'].each do |calc_field_name, calc_field_config|
-            debug_message("Processing calculated field #{calc_field_name}") if options[:verbose]
-            debug_message("Calculated field #{calc_field_name} config: #{calc_field_config}.") if options[:debug]
+          plug = TpLinkSmartplugInflux::Plug.new(name: plug, address: config['address'])
+          %i(debug= verbose=).each { |opt| plug.send(opt, config[opt]) }
 
-            if nil_or_empty?(calc_field_config['conditions'])
-              debug_message("Calculated field #{calc_field_name} has no configuration!")
-              next
+          unless nil_or_empty?(config['calculated_fields'])
+            config['calculated_fields'].each do |field, field_config|
+              debug_message("Adding calculated field '#{field}' for data field '#{field_config['field']}' with #{field_config['conditions'].count} conditions.") if options[:debug]
+
+              plug.calculated_fields.add(
+                TpLinkSmartplugInflux::Plug::CalculatedField.new(
+                  name: field,
+                  default: field_config['default'],
+                  field: field_config['field'],
+                  type: field_config['type'],
+                  conditions: field_config['conditions']
+                )
+              )
             end
-
-            result = {}
-            calc_field_config['conditions'].each do |value, conditions|
-              debug_message("Evaluating calculated field value #{value} against field #{calc_field_config['field']} with value #{data[calc_field_config['field'].to_sym]}.") if options[:debug]
-
-              result[value] ||= []
-              conditions.each do |opp, val|
-                debug_message("Evaluating field condition #{opp} against value #{val}.") if options[:debug]
-                result[value].push(data[calc_field_config['field'].to_sym].send(opp, val))
-              end
-            end
-            result = result.select { |_, res| res.all? { |r| r.eql?(true) } }
-
-            if result.count > 1
-              debug_message("Calculated field #{calc_field_name} returned ambigious result!")
-              calculated_fields[calc_field_name] = config['default']
-            else
-              calculated_fields[calc_field_name] = result.keys[0].to_i
-            end
-
-            debug_message("Calculated field #{calc_field_name} evaluated to result #{calculated_fields[calc_field_name]}.") if options[:verbose]
           end
-          debug_message("Took #{seconds_since(time_start)} seconds to process #{config['calculated_fields'].count} calculated fields for plug #{plug}.") if options[:debug]
-        end
 
-        data.each do |field, value|
-          measurement_string.concat("#{field}=#{value}i,")
-        end
+          measurement_string = ''
+          measurement_string.concat("#{measurement},")
+          measurement_string.concat(plug.influx_line)
 
-        calculated_fields.each do |field, value|
-          measurement_string.concat("#{field}=#{value}i,")
-        end
+          measurement_strings.push(measurement_string)
 
-        measurement_string = measurement_string[0...-1]
-        measurement_strings.push(measurement_string)
-      rescue RuntimeError
-        unless options[:silent_error]
-          puts "Error occured polling plug #{name}"
-          exit 1
+          debug_message("Took #{seconds_since(time_start)} seconds to poll plug #{plug.name}") if options[:debug]
+        rescue TpLinkSmartplugInflux::BaseError => e
+          debug_message("Error occured processing plug #{plug.name}:\n #{e}")if options[:verbose]
+          exit 1 unless options[:silent_error]
         end
       end
     end
+
+    threads.each(&:join)
   end
 end
 
 unless measurement_strings.empty?
   puts "\nInflux line protocol data:\n" if options[:verbose]
-  measurement_strings.each do |measurement|
+  measurement_strings.sort.each do |measurement|
     puts measurement
   end
 end
 
-debug_message("Took #{seconds_since(total_time_start)} seconds to poll all plugs.") if options[:debug]
+if options[:debug]
+  puts
+  debug_message("Took #{seconds_since(total_time_start)} seconds to poll all plugs.")
+end
