@@ -1,5 +1,10 @@
 # tp_link_smartplug_influx
 
+## v1.0.0 (2021-01-24)
+
+- Refactor from single script into library
+- Multithreaded polling
+
 ## v0.3.0 (2019-09-26)
 
 - Add default tags with plug name
