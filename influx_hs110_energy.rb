@@ -2,6 +2,8 @@
 
 ## Version 1.0.0
 
+require 'bundler/setup'
+
 require 'tp_link_smartplug'
 require 'json'
 require 'optparse'
