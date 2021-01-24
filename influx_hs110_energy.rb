@@ -85,24 +85,24 @@ unless nil_or_empty?(measurements)
 
     threads = []
 
-    plugs.each do |plug, config|
+    plugs.each do |plug_name, config|
       unless config.fetch('enabled', true)
-        debug_message("Processing disabled for plug #{plug}.") if options[:verbose]
+        debug_message("Processing disabled for plug #{plug_name}.") if options[:verbose]
         next
       end
 
       puts if options[:verbose]
-      debug_message("Processing plug #{plug}.") if options[:verbose]
+      debug_message("Processing plug #{plug_name}.") if options[:verbose]
       threads << Thread.new do
-        debug_message("Creating processing thread for plug #{plug}.") if options[:verbose]
+        debug_message("Creating processing thread for plug #{plug_name}.") if options[:verbose]
         begin
           time_start = Process.clock_gettime(Process::CLOCK_MONOTONIC) if options[:debug]
-          plug = TpLinkSmartplugInflux::Plug.new(name: plug, address: config['address'])
+          plug = TpLinkSmartplugInflux::Plug.new(name: plug_name, address: config['address'])
           %i(debug= verbose=).each { |opt| plug.send(opt, config[opt]) }
 
           unless nil_or_empty?(config['calculated_fields'])
             config['calculated_fields'].each do |field, field_config|
-              debug_message("Adding calculated field '#{field}' for data field '#{field_config['field']}' with #{field_config['conditions'].count} conditions.") if options[:debug]
+              debug_message("Adding calculated field '#{field}' for plug #{plug_name} data field '#{field_config['field']}' with #{field_config['conditions'].count} conditions.") if options[:debug]
 
               plug.calculated_fields.add(
                 TpLinkSmartplugInflux::Plug::CalculatedField.new(
@@ -124,7 +124,7 @@ unless nil_or_empty?(measurements)
 
           debug_message("Took #{seconds_since(time_start)} seconds to poll plug #{plug.name}") if options[:debug]
         rescue TpLinkSmartplugInflux::BaseError => e
-          debug_message("Error occured processing plug #{plug.name}:\n #{e}")if options[:verbose]
+          debug_message("Error occured processing plug #{plug.name}:\n #{e}") if options[:verbose]
           exit 1 unless options[:silent_error]
         end
       end
