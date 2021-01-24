@@ -5,9 +5,7 @@ module TpLinkSmartplugInflux
     # @attr default [String, Integer]
     # @attr field [String]
     class CalculatedField < TpLinkSmartplugInflux::Base
-      attr_reader :name
-      attr_reader :default
-      attr_reader :field
+      attr_reader :name, :default, :field
 
       attr_accessor :conditions
 
@@ -20,6 +18,8 @@ module TpLinkSmartplugInflux
       # @param field [String] Data field name to evalulate against.
       # @param conditions [Hash] Condition configuration Hash.
       def initialize(name:, default:, field:, type: 'Integer', conditions: {})
+        super()
+
         raise CalculatedFieldError if nil_or_empty?(name)
         raise CalculatedFieldError, "Invalid type #{type} for calculated field #{name}" unless CALCULATED_FIELD_ALLOWED_TYPES.include?(type)
 
@@ -33,7 +33,7 @@ module TpLinkSmartplugInflux
         @conditions = conditions
       end
 
-      # Evaulate the field conditions against the provided data hash.
+      # Evaluate the field conditions against the provided data hash.
       # @param data [Hash] Data hash to evaluate against.
       # @return [Hash] Result hash.
       def evaluate(data)

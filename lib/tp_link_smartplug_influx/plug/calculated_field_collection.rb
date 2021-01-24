@@ -4,6 +4,8 @@ module TpLinkSmartplugInflux
     class CalculatedFieldCollection < TpLinkSmartplugInflux::Base
       # Create a new calculated field collection
       def initialize
+        super()
+
         @calc_field_collection = {}
       end
 
@@ -61,6 +63,8 @@ module TpLinkSmartplugInflux
         end
 
         calc_field_result.join(',')
+      rescue CalculatedFieldError => e
+        raise CalculatedFieldCollectionError, "Error occured evaluating calculated field #{calc_field.name}, inner error: \n #{e}"
       end
 
       # Error class representing an error when evaluating the calculated field collection.

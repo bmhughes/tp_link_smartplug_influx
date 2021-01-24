@@ -13,7 +13,7 @@ end
 # @param string [String] Debug string to format and output.
 def debug_message(string)
   caller_method = caller_locations(1..1).first.label
-  STDOUT.puts(Time.now.strftime('%Y-%m-%d %H:%M:%S: ').concat("#{caller_method}: ").concat(string))
+  $stdout.puts(Time.now.strftime('%Y-%m-%d %H:%M:%S: ').concat("#{caller_method}: ").concat(string))
 end
 
 # Get the number of seconds elapsed since the provided time.

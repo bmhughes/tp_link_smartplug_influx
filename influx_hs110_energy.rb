@@ -124,10 +124,8 @@ unless nil_or_empty?(measurements)
 
           debug_message("Took #{seconds_since(time_start)} seconds to poll plug #{plug.name}") if options[:debug]
         rescue TpLinkSmartplugInflux::BaseError => e
-          unless options[:silent_error]
-            puts "Error occured processing plug #{plug.name}:\n #{e}"
-            exit 1
-          end
+          debug_message("Error occured processing plug #{plug.name}:\n #{e}")if options[:verbose]
+          exit 1 unless options[:silent_error]
         end
       end
     end

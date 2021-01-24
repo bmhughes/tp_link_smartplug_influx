@@ -10,10 +10,7 @@ module TpLinkSmartplugInflux
   # @attr debug [TrueClass, FalseClass]
   # @attr address [String]
   class Plug < TpLinkSmartplugInflux::Base
-    attr_accessor :name
-    attr_accessor :timeout
-    attr_accessor :calculated_fields
-    attr_accessor :verbose
+    attr_accessor :name, :timeout, :calculated_fields, :verbose
 
     # @overload debug
     #   @return [TrueClass, FalseClass] Return the present debug state.
@@ -38,6 +35,8 @@ module TpLinkSmartplugInflux
     # @param timeout [Integer] Plug polling timeout.
     # @return [nil]
     def initialize(name:, address:, timeout: 3)
+      super()
+
       @name = name
 
       @device = TpLinkSmartplug::Device.new(address: Resolv.getaddress(address))
@@ -118,9 +117,7 @@ module TpLinkSmartplugInflux
       values = []
       DATA_FIELDS.each { |type| values.concat(public_send(type).map { |k, v| "#{k}=#{iflf_formatted_value(v)}" }) }
 
-      unless calculated_fields.empty?
-        values.push(calculated_fields.evaluate_all(energy))
-      end
+      values.push(calculated_fields.evaluate_all(energy)) unless calculated_fields.empty?
 
       iflf_string.concat(values.join(','))
 
