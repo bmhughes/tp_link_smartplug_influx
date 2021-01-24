@@ -1,5 +1,9 @@
 # tp_link_smartplug_influx
 
+## v1.0.1 (2021-01-24)
+
+- Add plug poll time to influx data
+
 ## v1.0.0 (2021-01-24)
 
 - Refactor from single script into library
