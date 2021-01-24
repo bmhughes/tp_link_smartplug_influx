@@ -34,7 +34,9 @@ jobs:
       - uses: actions/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
-      - run: ruby -v
-      - run: bundle install
-      - run: ./influx_hs110_energy.rb -h
+      - run: |
+          ruby -v
+          gem install bundler
+          bundle install
+          ./influx_hs110_energy.rb -h
 ...
