@@ -96,7 +96,7 @@ unless nil_or_empty?(measurements)
       threads << Thread.new do
         debug_message("Creating processing thread for plug #{plug_name}.") if options[:verbose]
         begin
-          time_start = Process.clock_gettime(Process::CLOCK_MONOTONIC) if options[:debug]
+          time_start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
           plug = TpLinkSmartplugInflux::Plug.new(name: plug_name, address: config['address'])
           %i(debug= verbose=).each { |opt| plug.send(opt, config[opt]) }
 
@@ -119,6 +119,7 @@ unless nil_or_empty?(measurements)
           measurement_string = ''
           measurement_string.concat("#{measurement},")
           measurement_string.concat(plug.influx_line)
+          measurement_string.concat(",polltime=#{milliseconds_since(time_start)}")
 
           measurement_strings.push(measurement_string)
 

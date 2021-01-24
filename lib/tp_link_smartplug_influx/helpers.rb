@@ -23,6 +23,13 @@ def seconds_since(time)
   (Process.clock_gettime(Process::CLOCK_MONOTONIC) - time).round(2)
 end
 
+# Get the number of milliseconds elapsed since the provided time.
+# @param time [Float] Previous time input.
+# @return [Integer] Milliseconds elapsed.
+def milliseconds_since(time)
+  ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - time) * 1000).round
+end
+
 module TpLinkSmartplugInflux
   # Module containing helper methods to be included within the base class.
   #
