@@ -1,8 +1,6 @@
-# frozen_string_literal: true
-
 source 'https://rubygems.org'
 
-gem 'tp_link_smartplug', '~> 0.1.0'
+gem 'tp_link_smartplug', '~> 0.2.1'
 
 group :test do
   gem 'rspec'
