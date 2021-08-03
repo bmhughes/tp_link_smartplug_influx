@@ -10,7 +10,7 @@ module TpLinkSmartplugInflux
       attr_accessor :conditions
 
       CALCULATED_FIELD_ALLOWED_OPERATORS ||= %i(= > < >= <=).freeze
-      CALCULATED_FIELD_ALLOWED_TYPES ||= %w(Integer integer Float float String string).freeze
+      CALCULATED_FIELD_ALLOWED_TYPES ||= %i(integer float string).freeze
 
       # Create a new instance of a calculated field.
       # @param name [String] Calculated field name.
@@ -21,14 +21,14 @@ module TpLinkSmartplugInflux
         super()
 
         raise CalculatedFieldError if nil_or_empty?(name)
-        raise CalculatedFieldError, "Invalid type #{type} for calculated field #{name}" unless CALCULATED_FIELD_ALLOWED_TYPES.include?(type)
+        raise CalculatedFieldError, "Invalid type #{type} for calculated field #{name}" unless CALCULATED_FIELD_ALLOWED_TYPES.include?(type.downcase.to_sym)
 
         @name = name
         @default = default
         @field = field
-        @field_type = type
+        @field_type = type.downcase.to_sym
 
-        raise unless conditions.is_a?(Hash)
+        raise CalculatedFieldInvalidConditionError, "Conditions must be provided as a Hash" unless conditions.is_a?(Hash)
 
         @conditions = conditions
       end
@@ -44,9 +44,9 @@ module TpLinkSmartplugInflux
           raise CalculatedFieldError, "Calculated field #{@name}, condition value #{value} has no conditions." if @conditions.empty?
 
           typed_value = case @field_type
-                        when 'Integer', 'integer'
+                        when :integer
                           value.to_i
-                        when 'Float', 'float'
+                        when :float
                           value.to_f
                         else
                           value
@@ -88,7 +88,10 @@ module TpLinkSmartplugInflux
       end
 
       # Error class representing an error when evaluating the calculated field.
-      class CalculatedFieldError < TpLinkSmartplugInflux::BaseError; end
+      class CalculatedFieldError < BaseError; end
+
+      # Error class representing an invalid set of condtions provided
+      class CalculatedFieldInvalidConditionError < BaseError; end
     end
   end
 end
