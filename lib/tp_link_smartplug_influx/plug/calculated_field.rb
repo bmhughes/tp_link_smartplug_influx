@@ -9,8 +9,10 @@ module TpLinkSmartplugInflux
 
       attr_accessor :conditions
 
-      CALCULATED_FIELD_ALLOWED_OPERATORS ||= %i(= > < >= <=).freeze
-      CALCULATED_FIELD_ALLOWED_TYPES ||= %i(integer float string).freeze
+      CALCULATED_FIELD_ALLOWED_OPERATORS = %i(= > < >= <=).freeze
+      CALCULATED_FIELD_ALLOWED_TYPES = %i(integer float string).freeze
+
+      private_constant :CALCULATED_FIELD_ALLOWED_OPERATORS, :CALCULATED_FIELD_ALLOWED_TYPES
 
       # Create a new instance of a calculated field.
       # @param name [String] Calculated field name.
