@@ -1,6 +1,6 @@
 source 'https://rubygems.org'
 
-gem 'tp_link_smartplug', '~> 0.2.1'
+gem 'tp_link_smartplug', '~> 0.3'
 
 group :development do
   gem 'pry'
