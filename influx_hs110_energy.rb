@@ -39,13 +39,11 @@ OptionParser.new do |opts|
   end
 
   opts.on('-a ADDRESS', '--address ADDRESS', 'IP or FDQN of plug to poll') do |h|
-    begin
-      options[:hostname] = h
-      options[:address] = IPAddr.new(Resolv.getaddress(h))
-    rescue Resolv::ResolvError
-      puts "Unable to resolve address for host #{h}"
-      exit
-    end
+    options[:hostname] = h
+    options[:address] = IPAddr.new(Resolv.getaddress(h))
+  rescue Resolv::ResolvError
+    puts "Unable to resolve address for host #{h}"
+    exit
   end
 
   opts.on('-c FILE', '--config FILE', 'Configuration file') do |c|
