@@ -1,14 +1,10 @@
 #!/usr/bin/env ruby
 
-## Version 1.0.0
-
-require 'bundler/setup'
-
-require 'tp_link_smartplug'
+require 'ipaddr'
 require 'json'
 require 'optparse'
-require 'ipaddr'
 require 'resolv'
+require 'tp_link_smartplug'
 
 require_relative 'lib/tp_link_smartplug_influx'
 
@@ -57,7 +53,7 @@ OptionParser.new do |opts|
   end
 end.parse!
 
-total_time_start = Process.clock_gettime(Process::CLOCK_MONOTONIC) if options[:debug]
+total_time_start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
 if options.key?(:address) && !options.key?(:config)
   measurements = {}
@@ -98,6 +94,7 @@ unless nil_or_empty?(measurements)
         begin
           time_start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
           plug = TpLinkSmartplugInflux::Plug.new(name: plug_name, address: config['address'])
+          plug.timeout = 1
           %i(debug= verbose=).each { |opt| plug.send(opt, config[opt]) }
 
           unless nil_or_empty?(config['calculated_fields'])
@@ -140,6 +137,7 @@ unless measurement_strings.empty?
   measurement_strings.sort.each do |measurement|
     puts measurement
   end
+  puts "TPLink-Smartplug-Influx-rb polltime_total=#{milliseconds_since(total_time_start)}"
 end
 
 if options[:debug]
