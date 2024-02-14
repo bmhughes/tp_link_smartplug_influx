@@ -50,6 +50,8 @@ module TpLinkSmartplugInflux
       @calculated_fields = TpLinkSmartplugInflux::Plug::CalculatedFieldCollection.new
 
       debug_message("Initialised new plug #{@name} with timeout #{device.timeout}.") if @debug
+    rescue TpLinkSmartplug::BaseError => e
+      raise PlugPollError, "Error occured creating plug device for #{@name}, inner error: #{e}"
     end
 
     # get all data for the plug.
